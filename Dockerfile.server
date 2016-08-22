@@ -1,0 +1,10 @@
+FROM golang:1.6.3
+MAINTAINER Sakeven Jiang <sakeven.jiang@daocloud.io>
+
+EXPOSE 80
+
+ADD opt/hadolint $GOPATH/bin/hadolint
+ADD server $GOPATH/src/server
+RUN go install server
+
+CMD ["server"]
