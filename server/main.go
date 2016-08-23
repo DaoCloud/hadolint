@@ -69,7 +69,8 @@ func createDockerfile(dockerfile string) (string, error) {
 func parse(lintContent string) map[string][]string {
 	linter := make(map[string][]string)
 
-	if len(lintContent) == 0 {
+	if len(lintContent) == 0 ||
+		strings.HasPrefix(lintContent, "hadolint") {
 		return linter
 	}
 
