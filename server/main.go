@@ -28,37 +28,42 @@ func lint(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	tmpfile, err := ioutil.TempFile("", "Dockerfile")
+	fileName, err := createDockerfile(dockerfile.Content)
 	if err != nil {
-		log.Printf("Create tempfile error %s\n", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	defer tmpfile.Close()
-
-	log.Println(tmpfile.Name(), dockerfile.Content)
-
-	if _, err := tmpfile.WriteString(dockerfile.Content); err != nil {
-		log.Printf("Write tempfile error %s\n", err)
-		rw.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	command := exec.Command("hadolint", tmpfile.Name())
+	command := exec.Command("hadolint", fileName)
 	var out bytes.Buffer
 	command.Stdout = &out
 	command.Stderr = &out
-
 	command.Run()
 
 	lint := string(out.Bytes())
 	log.Println(lint)
-
 	linter := parse(lint)
 
 	rw.Header().Set("Content-Type", "application/json; charset=utf-8")
 	json.NewEncoder(rw).Encode(linter)
+}
+
+func createDockerfile(dockerfile string) (string, error) {
+	tmpfile, err := ioutil.TempFile("", "Dockerfile")
+	if err != nil {
+		log.Printf("Create tempfile error %s\n", err)
+		return "", err
+	}
+	defer tmpfile.Close()
+
+	log.Println(tmpfile.Name(), dockerfile)
+
+	if _, err := tmpfile.WriteString(dockerfile); err != nil {
+		log.Printf("Write tempfile error %s\n", err)
+		return tmpfile.Name(), err
+	}
+
+	return tmpfile.Name(), nil
 }
 
 func parse(lintContent string) map[string][]string {
@@ -93,6 +98,8 @@ func getNumber(fileNumber string) string {
 }
 
 func main() {
-	http.HandleFunc("/api/dockerfile", lint)
+	http.Handle("/api/dockerfile", cors(lint))
+
+	log.Printf("Starting server at port 8000.")
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }
