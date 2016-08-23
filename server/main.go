@@ -37,7 +37,8 @@ func lint(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	if err := command.Wait(); err != nil {
-		log.Printf("Exec command error %s\n", err)
+		output, err := command.Output()
+		log.Printf("Exec command error %s,%s\n", string(output), err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
