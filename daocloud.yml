@@ -1,0 +1,14 @@
+version: 2.0
+
+build:
+  lite_image:
+    compile:
+      build_dir: /hadolint
+      dockerfile_path: /hadolint/Dockerfile
+      cache: true
+    extract:
+      - /root/.local/bin/hadolint
+    package:
+      dockerfile_path: Dockerfile.server
+      build_dir: /
+      cache: true
