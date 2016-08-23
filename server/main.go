@@ -3,13 +3,15 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os/exec"
+	"strings"
 )
 
 type Dockerfile struct {
-	Content string `dockerfile`
+	Content string `json:"dockerfile"`
 }
 
 func lint(rw http.ResponseWriter, req *http.Request) {
@@ -26,29 +28,71 @@ func lint(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	b := new(bytes.Buffer)
-	command := exec.Command("hadolint", dockerfile.Content)
-	command.Stdout = b
-	command.Stderr = b
-	if err := command.Start(); err != nil {
-		log.Printf("Start command error %s\n", err)
+	tmpfile, err := ioutil.TempFile("", "Dockerfile")
+	if err != nil {
+		log.Printf("Create tempfile error %s\n", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if err := command.Wait(); err != nil {
-		output, err := command.Output()
-		log.Printf("Exec command error %s,%s\n", string(output), err)
+	defer tmpfile.Close()
+
+	log.Println(tmpfile.Name(), dockerfile.Content)
+
+	if _, err := tmpfile.WriteString(dockerfile.Content); err != nil {
+		log.Printf("Write tempfile error %s\n", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	lint := string(b.Bytes())
+	command := exec.Command("hadolint", tmpfile.Name())
+	var out bytes.Buffer
+	command.Stdout = &out
+	command.Stderr = &out
+
+	command.Run()
+
+	lint := string(out.Bytes())
+	log.Println(lint)
+
+	linter := parse(lint)
+
 	rw.Header().Set("Content-Type", "application/json; charset=utf-8")
-	json.NewEncoder(rw).Encode(lint)
+	json.NewEncoder(rw).Encode(linter)
+}
+
+func parse(lintContent string) map[string][]string {
+	linter := make(map[string][]string)
+
+	if len(lintContent) == 0 {
+		return linter
+	}
+
+	lints := strings.Split(lintContent, "\n")
+	for _, lint := range lints {
+		numAndlinter := strings.SplitN(lint, " ", 2)
+		if len(numAndlinter) != 2 {
+			continue
+		}
+
+		lineNumber := getNumber(numAndlinter[0])
+		lineLinter := numAndlinter[1]
+		linter[lineNumber] = append(linter[lineNumber], lineLinter)
+	}
+
+	return linter
+}
+
+func getNumber(fileNumber string) string {
+	fileAndNumer := strings.Split(fileNumber, ":")
+	if len(fileAndNumer) == 1 {
+		return "0"
+	}
+
+	return fileAndNumer[1]
 }
 
 func main() {
 	http.HandleFunc("/api/dockerfile", lint)
-	log.Fatal(http.ListenAndServe(":80", nil))
+	log.Fatal(http.ListenAndServe(":8000", nil))
 }
