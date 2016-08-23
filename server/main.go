@@ -42,7 +42,7 @@ func lint(rw http.ResponseWriter, req *http.Request) {
 
 	lint := string(out.Bytes())
 	log.Println(lint)
-	linter := parse(lint)
+	linter := parse(lint, fileName)
 
 	rw.Header().Set("Content-Type", "application/json; charset=utf-8")
 	json.NewEncoder(rw).Encode(linter)
@@ -66,23 +66,30 @@ func createDockerfile(dockerfile string) (string, error) {
 	return tmpfile.Name(), nil
 }
 
-func parse(lintContent string) map[string][]string {
+const specialLine = "\" (line "
+
+func parse(lintContent, fileName string) map[string][]string {
 	linter := make(map[string][]string)
 
-	if len(lintContent) == 0 ||
-		strings.HasPrefix(lintContent, "hadolint") {
+	if len(lintContent) == 0 {
 		return linter
 	}
 
-	lints := strings.Split(lintContent, "\n")
+	lints := strings.Split(lintContent, fileName)
 	for _, lint := range lints {
-		numAndlinter := strings.SplitN(lint, " ", 2)
-		if len(numAndlinter) != 2 {
+		// log.Println(lint)
+		var numAndLinter []string
+		if strings.HasPrefix(lint, specialLine) {
+			numAndLinter = strings.SplitN(lint, ":\n", 2)
+		} else {
+			numAndLinter = strings.SplitN(lint, " ", 2)
+		}
+		if len(numAndLinter) != 2 {
 			continue
 		}
 
-		lineNumber := getNumber(numAndlinter[0])
-		lineLinter := numAndlinter[1]
+		lineNumber := getNumber(numAndLinter[0])
+		lineLinter := strings.Trim(numAndLinter[1], "\n")
 		linter[lineNumber] = append(linter[lineNumber], lineLinter)
 	}
 
@@ -90,6 +97,20 @@ func parse(lintContent string) map[string][]string {
 }
 
 func getNumber(fileNumber string) string {
+	// log.Printf("line number %s\n", fileNumber)
+	if strings.HasPrefix(fileNumber, specialLine) {
+		fileNumer := strings.TrimPrefix(fileNumber, specialLine)
+		i := ""
+		for _, r := range fileNumer {
+			if (r >= '0') && (r <= '9') {
+				i += string(r)
+			} else {
+				break
+			}
+		}
+		return i
+	}
+
 	fileAndNumer := strings.Split(fileNumber, ":")
 	if len(fileAndNumer) == 1 {
 		return "0"
