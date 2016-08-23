@@ -3,7 +3,7 @@ MAINTAINER Sakeven Jiang <sakeven.jiang@daocloud.io>
 
 EXPOSE 80
 
-ADD opt/hadolint $GOPATH/bin/hadolint
+ADD /root/.local/bin/hadolint $GOPATH/bin/hadolint
 ADD server $GOPATH/src/server
 RUN go install server
 
