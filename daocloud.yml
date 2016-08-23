@@ -7,7 +7,7 @@ build:
       dockerfile_path: Dockerfile
       cache: true
     extract:
-      - /opt/hadolint
+      - /root/.local/bin/hadolint
     package:
       dockerfile_path: Dockerfile.server
       build_dir: /
