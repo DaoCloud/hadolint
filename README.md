@@ -39,6 +39,7 @@ curl -X POST -H "Content-Type: application/json"  \
     "DL3011 Valid UNIX ports range from 0 to 65535"
   ],
   "3": [
+    "SC2164 Use cd ... || exit in case cd fails.",
     "DL3003 Use WORKDIR to switch to a directory"
   ]
 }
