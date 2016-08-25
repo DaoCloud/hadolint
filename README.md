@@ -24,7 +24,7 @@ BODY:
 
 ## Example
 ```shell
-curl -X POST -H "Content-Type: application/json"  \ 
+curl -X POST -H "Content-Type: application/json"  \
   -d '{"dockerfile": "FROM ubuntu\nEXPOSE 808000\nRUN cd /usr/app"}' \
   "http://hadolint.daoapp.io/api/dockerfile"
 
