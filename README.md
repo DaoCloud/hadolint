@@ -26,7 +26,7 @@ BODY:
 ```shell
 curl -X POST -H "Content-Type: application/json"  \ 
   -d '{"dockerfile": "FROM ubuntu\nEXPOSE 808000\nRUN cd /usr/app"}' \
-  "http://sakeven-hadolint.daoapp.io/api/dockerfile"
+  "http://hadolint.daoapp.io/api/dockerfile"
 
 {
   "0": [
