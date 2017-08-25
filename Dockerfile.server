@@ -1,4 +1,4 @@
-FROM golang:1.6.3
+FROM golang:1.8.3
 MAINTAINER Sakeven Jiang <sakeven.jiang@daocloud.io>
 
 RUN apt-get update -y && \
